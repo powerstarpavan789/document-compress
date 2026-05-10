@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart File Compressor</title>
+  <style>
+    :root {
+      --bg: #f5efe1;
+      --bg-soft: #fff9ef;
+      --surface: rgba(255, 252, 246, 0.92);
+      --card: rgba(255, 255, 255, 0.88);
+      --text: #19353b;
+      --muted: #53656c;
+      --line: rgba(25, 53, 59, 0.12);
+      --accent: #0f7c82;
+      --accent-deep: #0c5d61;
+      --accent-soft: rgba(15, 124, 130, 0.14);
+      --warning: #a85c24;
+      --shadow: 0 24px 60px rgba(30, 53, 57, 0.12);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100svh;
+      min-height: 100svh;
+      overflow: hidden;
+      font-family: "Aptos", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255, 214, 153, 0.45), transparent 30%),
+        radial-gradient(circle at top right, rgba(125, 193, 186, 0.38), transparent 26%),
+        linear-gradient(135deg, #efe3ca 0%, #f6f0e6 38%, #eaf4f2 100%);
+      padding: 10px;
+    }
+
+    .shell {
+      max-width: 1200px;
+      height: 100%;
+      margin: 0 auto;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 10px;
+    }
+
+    .hero,
+    .panel,
+    .action-row,
+    .status-pill {
+      background: var(--surface);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .hero {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: "Cambria", "Georgia", serif;
+      font-size: clamp(1.2rem, 4vw, 2rem);
+      line-height: 1.1;
+    }
+
+    .hero-badge,
+    .mini-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.86);
+      color: var(--accent-deep);
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .toolbar {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .view-switch {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+      padding: 4px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.52);
+      border: 1px solid var(--line);
+    }
+
+    .view-button,
+    .pick-button,
+    .run-button,
+    .download-button {
+      border: 0;
+      border-radius: 999px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+    }
+
+    .view-button {
+      padding: 11px 14px;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .view-button.active {
+      background: #ffffff;
+      color: var(--accent-deep);
+      box-shadow: 0 10px 18px rgba(30, 53, 57, 0.08);
+    }
+
+    .status-pill {
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 14px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+
+    .workspace {
+      position: relative;
+      min-height: 0;
+    }
+
+    .panel {
+      position: absolute;
+      inset: 0;
+      min-height: 0;
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      overflow: hidden;
+    }
+
+    .panel.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: none;
+    }
+
+    .panel-setup {
+      grid-template-rows: auto auto auto auto 1fr;
+    }
+
+    .panel-results {
+      grid-template-rows: auto auto 1fr;
+    }
+
+    .dropzone {
+      border: 2px dashed rgba(15, 124, 130, 0.22);
+      border-radius: 20px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(244, 250, 249, 0.92));
+      padding: 15px 14px;
+      text-align: center;
+      display: grid;
+      gap: 8px;
+      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .dropzone.dragover {
+      transform: translateY(-2px);
+      border-color: rgba(15, 124, 130, 0.7);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(226, 247, 243, 0.98));
+    }
+
+    .dropzone strong {
+      display: block;
+      font-size: 1rem;
+    }
+
+    .dropzone input {
+      display: none;
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    label,
+    .field-title,
+    .stack-head {
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 13px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.94);
+      font: inherit;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input[type="number"]:focus,
+    select:focus {
+      border-color: rgba(15, 124, 130, 0.48);
+      box-shadow: 0 0 0 4px rgba(15, 124, 130, 0.1);
+    }
+
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+
+    .pick-button,
+    .download-button {
+      background: #ffffff;
+      color: var(--accent-deep);
+      box-shadow: inset 0 0 0 1px rgba(15, 124, 130, 0.18);
+      padding: 10px 16px;
+      justify-self: center;
+    }
+
+    .run-button {
+      width: 100%;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
+      color: #fff;
+      box-shadow: 0 16px 30px rgba(15, 124, 130, 0.24);
+    }
+
+    .pick-button:hover,
+    .run-button:hover,
+    .download-button:hover,
+    .view-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .run-button:disabled {
+      cursor: wait;
+      opacity: 0.7;
+      transform: none;
+    }
+
+    .toggle-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid var(--line);
+      font-size: 0.82rem;
+    }
+
+    .toggle input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    .note-strip {
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(15, 124, 130, 0.09);
+      color: var(--accent-deep);
+      font-size: 0.8rem;
+      line-height: 1.35;
+    }
+
+    .stack-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .file-list,
+    .result-list {
+      min-height: 0;
+      overflow: auto;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+      padding-right: 2px;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid var(--line);
+      color: var(--text);
+      flex-wrap: wrap;
+    }
+
+    .chip strong {
+      flex-basis: 100%;
+      font-size: 0.88rem;
+    }
+
+    .chip small,
+    .card small {
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(25, 53, 59, 0.1);
+      border-radius: 18px;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .metric {
+      background: rgba(255, 255, 255, 0.88);
+      border-radius: 12px;
+      border: 1px solid rgba(25, 53, 59, 0.08);
+      padding: 10px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 0.94rem;
+      margin-top: 4px;
+    }
+
+    .pill {
+      padding: 7px 9px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .pill.ok {
+      color: #0a5c37;
+      background: rgba(27, 166, 106, 0.12);
+    }
+
+    .pill.warn {
+      color: var(--warning);
+      background: rgba(168, 92, 36, 0.12);
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.38;
+    }
+
+    .fine-print {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255, 250, 242, 0.92);
+      border: 1px solid rgba(168, 92, 36, 0.12);
+      color: #70431e;
+      font-size: 0.8rem;
+      line-height: 1.42;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 4px 2px;
+      font-size: 0.84rem;
+    }
+
+    .action-row {
+      padding: 10px;
+    }
+
+    @media (min-width: 900px) {
+      body {
+        padding: 16px;
+      }
+
+      .toolbar {
+        grid-template-columns: 280px 1fr;
+        align-items: center;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: 1.08fr 0.92fr;
+        gap: 12px;
+      }
+
+      .panel {
+        position: relative;
+        inset: auto;
+        opacity: 1;
+        pointer-events: auto;
+        transform: none;
+        height: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <h1>Compress Photos & PDFs</h1>
+      <div class="hero-badge" id="selectionBadge">0 files</div>
+    </section>
+
+    <section class="toolbar">
+      <div class="view-switch" role="tablist" aria-label="Compressor view switch">
+        <button class="view-button active" id="setupTab" type="button" data-view-button="setup" aria-selected="true">Setup</button>
+        <button class="view-button" id="resultsTab" type="button" data-view-button="results" aria-selected="false">Results</button>
+      </div>
+      <div class="status-pill" id="summaryText">Waiting for files.</div>
+    </section>
+
+    <section class="workspace">
+      <section class="panel panel-setup active" data-panel="setup">
+        <div class="dropzone" id="dropzone">
+          <strong>Tap or drop files</strong>
+          <p class="hint">Best support: photos and PDFs.</p>
+          <button class="pick-button" id="pickButton" type="button">Choose files</button>
+          <input id="fileInput" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.xml,.html,.md">
+        </div>
+
+        <div class="quick-grid">
+          <div class="field">
+            <label for="targetSize">Target size</label>
+            <input id="targetSize" type="number" min="10" step="10" value="250">
+          </div>
+
+          <div class="field">
+            <label for="targetUnit">Unit</label>
+            <select id="targetUnit">
+              <option value="KB" selected>KB</option>
+              <option value="MB">MB</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="imageFormat">Image output</label>
+            <select id="imageFormat">
+              <option value="auto" selected>Auto</option>
+              <option value="image/jpeg">JPEG</option>
+              <option value="image/webp">WebP</option>
+              <option value="image/png">PNG</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="pdfQuality">PDF priority</label>
+            <select id="pdfQuality">
+              <option value="0.58" selected>Maximum quality</option>
+              <option value="0.46">Balanced</option>
+              <option value="0.36">Smaller file</option>
+              <option value="0.28">Very small</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="toggle-grid">
+          <label class="toggle">
+            <input id="allowResize" type="checkbox" checked>
+            <span>Allow image resize</span>
+          </label>
+          <label class="toggle">
+            <input id="keepName" type="checkbox" checked>
+            <span>Keep file name</span>
+          </label>
+        </div>
+
+        <div class="note-strip">HTML mode is optimized for photos and PDFs. Office files still need backend compression.</div>
+
+        <div class="stack-head">
+          <span>Selected files</span>
+          <span class="mini-pill" id="selectionCount">0</span>
+        </div>
+
+        <div class="file-list" id="fileList">
+          <div class="empty">No files selected yet.</div>
+        </div>
+      </section>
+
+      <section class="panel panel-results" data-panel="results">
+        <div class="stack-head">
+          <span>Compressed results</span>
+          <span class="mini-pill" id="resultCount">0</span>
+        </div>
+
+        <div class="fine-print">
+          Quality is kept as high as possible inside your chosen size. Files already under the limit keep original quality.
+        </div>
+
+        <div class="result-list" id="resultList">
+          <div class="empty">Nothing compressed yet.</div>
+        </div>
+      </section>
+    </section>
+
+    <div class="action-row">
+      <button class="run-button" id="compressButton" type="button">Compress files</button>
+    </div>
+  </div>
+
+  <script src="./pdf.min.js"></script>
+  <script src="./jspdf.umd.min.js"></script>
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const pickButton = document.getElementById("pickButton");
+    const dropzone = document.getElementById("dropzone");
+    const fileList = document.getElementById("fileList");
+    const resultList = document.getElementById("resultList");
+    const summaryText = document.getElementById("summaryText");
+    const compressButton = document.getElementById("compressButton");
+    const targetSizeInput = document.getElementById("targetSize");
+    const targetUnitSelect = document.getElementById("targetUnit");
+    const imageFormatSelect = document.getElementById("imageFormat");
+    const pdfQualitySelect = document.getElementById("pdfQuality");
+    const allowResizeCheckbox = document.getElementById("allowResize");
+    const keepNameCheckbox = document.getElementById("keepName");
+    const selectionCount = document.getElementById("selectionCount");
+    const selectionBadge = document.getElementById("selectionBadge");
+    const resultCount = document.getElementById("resultCount");
+    const viewButtons = Array.from(document.querySelectorAll("[data-view-button]"));
+    const panels = Array.from(document.querySelectorAll("[data-panel]"));
+
+    let selectedFiles = [];
+
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = "./pdf.worker.min.js";
+    }
+
+    pickButton.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", (event) => syncFiles(event.target.files));
+    compressButton.addEventListener("click", handleCompression);
+    viewButtons.forEach((button) => {
+      button.addEventListener("click", () => setView(button.dataset.viewButton));
+    });
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+      dropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropzone.classList.add("dragover");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      dropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropzone.classList.remove("dragover");
+      });
+    });
+
+    dropzone.addEventListener("drop", (event) => {
+      syncFiles(event.dataTransfer.files);
+    });
+
+    function syncFiles(fileListLike) {
+      selectedFiles = Array.from(fileListLike || []);
+      setView("setup");
+      updateSelectionDisplay();
+      updateResultCount(0);
+      renderSelectedFiles();
+      resultList.innerHTML = '<div class="empty">Ready to compress.</div>';
+      summaryText.textContent = selectedFiles.length
+        ? selectedFiles.length + " file(s) selected."
+        : "Waiting for files.";
+    }
+
+    function renderSelectedFiles() {
+      if (!selectedFiles.length) {
+        fileList.innerHTML = '<div class="empty">No files selected yet.</div>';
+        return;
+      }
+
+      fileList.innerHTML = selectedFiles.map((file) => {
+        return `
+          <div class="chip">
+            <strong>${escapeHtml(file.name)}</strong>
+            <small>${formatBytes(file.size)}</small>
+            <small>${describeType(file)}</small>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function handleCompression() {
+      if (!selectedFiles.length) {
+        summaryText.textContent = "Please choose at least one file.";
+        return;
+      }
+
+      const targetBytes = getTargetBytes();
+      if (!targetBytes || targetBytes <= 0) {
+        summaryText.textContent = "Enter a valid target size.";
+        return;
+      }
+
+      resultList.innerHTML = "";
+      updateResultCount(0);
+      compressButton.disabled = true;
+      compressButton.textContent = "Compressing...";
+      summaryText.textContent = "Working on your files...";
+      setView("results");
+
+      const settings = {
+        targetBytes,
+        imageMime: imageFormatSelect.value,
+        pdfQualityFloor: Number(pdfQualitySelect.value),
+        allowResize: allowResizeCheckbox.checked,
+        keepNameBase: keepNameCheckbox.checked
+      };
+
+      let successCount = 0;
+      let keptOriginalCount = 0;
+
+      for (const [index, file] of selectedFiles.entries()) {
+        const card = createResultCard(file.name, "Working...");
+        resultList.appendChild(card);
+        updateResultCount(index + 1);
+
+        try {
+          const result = await processFile(file, settings);
+          card.replaceWith(buildResultCard(file, result, targetBytes));
+          if (result.keptOriginal) {
+            keptOriginalCount += 1;
+          } else if (result.blob.size < file.size) {
+            successCount += 1;
+          }
+        } catch (error) {
+          card.replaceWith(buildErrorCard(file, error));
+        }
+      }
+
+      if (successCount || keptOriginalCount) {
+        const summaryParts = [];
+
+        if (successCount) {
+          summaryParts.push(successCount + " reduced");
+        }
+
+        if (keptOriginalCount) {
+          summaryParts.push(keptOriginalCount + " already within target");
+        }
+
+        summaryText.textContent = summaryParts.join(" | ") + ".";
+      } else {
+        summaryText.textContent = "Finished. Some files may already be near their minimum size.";
+      }
+
+      compressButton.disabled = false;
+      compressButton.textContent = "Compress files";
+    }
+
+    function setView(view) {
+      viewButtons.forEach((button) => {
+        const isActive = button.dataset.viewButton === view;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-selected", isActive ? "true" : "false");
+      });
+
+      panels.forEach((panel) => {
+        panel.classList.toggle("active", panel.dataset.panel === view);
+      });
+    }
+
+    function updateSelectionDisplay() {
+      const count = selectedFiles.length;
+      selectionCount.textContent = String(count);
+      selectionBadge.textContent = count ? count + " files" : "0 files";
+    }
+
+    function updateResultCount(count) {
+      resultCount.textContent = String(count);
+    }
+
+    async function processFile(file, settings) {
+      if (file.size <= settings.targetBytes) {
+        return buildOriginalResult(file, "original already within target size | full quality kept");
+      }
+
+      if (isImage(file)) {
+        return compressImage(file, settings);
+      }
+
+      if (isPdf(file)) {
+        return compressPdf(file, settings);
+      }
+
+      throw new Error(
+        "This HTML version directly supports images and PDF documents. " +
+        "DOCX, XLSX, and PPTX usually need server-side processing for reliable size reduction."
+      );
+    }
+
+    async function compressImage(file, settings) {
+      const sourceImage = await loadImage(file);
+      const outputMime = chooseImageMime(file, settings.imageMime);
+      const canUseQuality = outputMime !== "image/png";
+      const minScale = settings.allowResize ? 0.24 : 1;
+      let scale = 1;
+      let bestCandidate = null;
+      let attempt = 0;
+
+      while (attempt < 8) {
+        const candidate = await searchImageCandidate(sourceImage, outputMime, scale, settings.targetBytes);
+
+        bestCandidate = pickBetterCandidate(bestCandidate, candidate, settings.targetBytes);
+
+        if (candidate.blob.size <= settings.targetBytes * 1.05) {
+          break;
+        }
+
+        if (!settings.allowResize || scale <= minScale + 0.01) {
+          break;
+        }
+
+        const ratio = Math.sqrt(settings.targetBytes / candidate.blob.size);
+        const scaled = scale * Math.max(0.7, ratio * 0.98);
+        const nextScale = Math.max(minScale, Math.min(scale - 0.06, scaled));
+
+        if (Math.abs(nextScale - scale) < 0.015) {
+          scale = Math.max(minScale, scale - 0.08);
+        } else {
+          scale = nextScale;
+        }
+
+        attempt += 1;
+      }
+
+      const chosen = bestCandidate || await renderImageBlob(sourceImage, outputMime, 1, 0.82);
+      const extension = extensionFromMime(outputMime);
+      const finalName = buildOutputName(file.name, extension, settings.keepNameBase);
+      const noteParts = [];
+
+      if (chosen.scale < 0.99) {
+        noteParts.push("resized to " + chosen.width + " x " + chosen.height);
+      }
+
+      if (canUseQuality) {
+        noteParts.push("quality " + Math.round(chosen.quality * 100) + "%");
+      }
+
+      if (file.type === "image/gif") {
+        noteParts.push("animated GIFs become a static image in this version");
+      }
+
+      return {
+        blob: chosen.blob,
+        fileName: finalName,
+        outputType: outputMime,
+        note: noteParts.join(" | "),
+        targetHit: chosen.blob.size <= settings.targetBytes * 1.08
+      };
+    }
+
+    async function searchImageCandidate(image, mime, scale, targetBytes) {
+      if (mime === "image/png") {
+        return renderImageBlob(image, mime, scale, 0.92);
+      }
+
+      const maximumQualityCandidate = await renderImageBlob(image, mime, scale, 0.98);
+      if (isWithinTarget(maximumQualityCandidate, targetBytes)) {
+        return maximumQualityCandidate;
+      }
+
+      const minimumQualityCandidate = await renderImageBlob(image, mime, scale, 0.18);
+      if (!isWithinTarget(minimumQualityCandidate, targetBytes)) {
+        return minimumQualityCandidate;
+      }
+
+      let low = 0.18;
+      let high = 0.98;
+      let best = minimumQualityCandidate;
+
+      for (let i = 0; i < 8; i += 1) {
+        const quality = (low + high) / 2;
+        const candidate = await renderImageBlob(image, mime, scale, quality);
+
+        if (isWithinTarget(candidate, targetBytes)) {
+          best = candidate;
+          low = quality;
+        } else {
+          high = quality;
+        }
+      }
+
+      return best;
+    }
+
+    async function renderImageBlob(image, mime, scale, quality) {
+      const width = Math.max(1, Math.round(image.naturalWidth * scale));
+      const height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d", { alpha: mime !== "image/jpeg" });
+
+      canvas.width = width;
+      canvas.height = height;
+
+      if (mime === "image/jpeg") {
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, width, height);
+      }
+
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
+      context.drawImage(image, 0, 0, width, height);
+
+      const blob = await canvasToBlob(canvas, mime, quality);
+      return { blob, mime, quality, width, height, scale };
+    }
+
+    async function compressPdf(file, settings) {
+      if (!window.pdfjsLib || !window.jspdf) {
+        throw new Error("PDF support files are missing. Keep smart-compressor.html, pdf.min.js, pdf.worker.min.js, and jspdf.umd.min.js in the same folder.");
+      }
+
+      const originalBytes = file.size;
+      const ratioSeed = Math.sqrt(Math.min(1, settings.targetBytes / originalBytes)) || 1;
+      const qualityFloor = clamp(settings.pdfQualityFloor, 0.28, 0.9);
+      let scale = clamp(ratioSeed * 1.15, 0.45, 1);
+
+      const pdfBuffer = await file.arrayBuffer();
+      const loadingTask = window.pdfjsLib.getDocument({ data: pdfBuffer });
+      const pdf = await loadingTask.promise;
+      let bestCandidate = null;
+
+      try {
+        const fullScaleCandidate = await searchPdfCandidate(pdf, 1, settings.targetBytes, qualityFloor);
+        bestCandidate = pickBetterCandidate(bestCandidate, fullScaleCandidate, settings.targetBytes);
+
+        if (!isWithinTarget(fullScaleCandidate, settings.targetBytes)) {
+          for (let attempt = 0; attempt < 3; attempt += 1) {
+            const candidate = await searchPdfCandidate(pdf, scale, settings.targetBytes, qualityFloor);
+            bestCandidate = pickBetterCandidate(bestCandidate, candidate, settings.targetBytes);
+
+            if (isWithinTarget(candidate, settings.targetBytes)) {
+              break;
+            }
+
+            if (scale <= 0.46) {
+              break;
+            }
+
+            const ratio = settings.targetBytes / candidate.blob.size;
+            const scaled = scale * Math.max(0.72, Math.sqrt(ratio) * 0.98);
+            const nextScale = clamp(Math.min(scale - 0.04, scaled), 0.45, 1);
+
+            if (Math.abs(nextScale - scale) < 0.015) {
+              scale = Math.max(0.45, scale - 0.08);
+            } else {
+              scale = nextScale;
+            }
+          }
+        }
+      } finally {
+        loadingTask.destroy();
+      }
+
+      const chosen = bestCandidate;
+      const finalName = buildOutputName(file.name, "pdf", settings.keepNameBase);
+
+      return {
+        blob: chosen.blob,
+        fileName: finalName,
+        outputType: "application/pdf",
+        note: "rebuilt from page images | raster scale " + chosen.scale.toFixed(2) + " | JPEG quality " + Math.round(chosen.quality * 100) + "%",
+        targetHit: chosen.blob.size <= settings.targetBytes * 1.1
+      };
+    }
+
+    async function searchPdfCandidate(pdf, scale, targetBytes, qualityFloor) {
+      const maxQualityCandidate = await rasterizePdfCandidate(pdf, scale, 0.92);
+      if (isWithinTarget(maxQualityCandidate, targetBytes)) {
+        return maxQualityCandidate;
+      }
+
+      const lowQualityCandidate = await rasterizePdfCandidate(pdf, scale, qualityFloor);
+      if (!isWithinTarget(lowQualityCandidate, targetBytes)) {
+        return lowQualityCandidate;
+      }
+
+      let low = qualityFloor;
+      let high = 0.92;
+      let best = lowQualityCandidate;
+
+      for (let i = 0; i < 4; i += 1) {
+        const quality = (low + high) / 2;
+        const candidate = await rasterizePdfCandidate(pdf, scale, quality);
+
+        if (isWithinTarget(candidate, targetBytes)) {
+          best = candidate;
+          low = quality;
+        } else {
+          high = quality;
+        }
+      }
+
+      return best;
+    }
+
+    async function rasterizePdfCandidate(pdf, scale, quality) {
+      const firstPage = await pdf.getPage(1);
+      const firstViewport = firstPage.getViewport({ scale: limitPdfScale(firstPage, scale) });
+      const { jsPDF } = window.jspdf;
+      const documentPdf = new jsPDF({
+        unit: "pt",
+        format: [firstViewport.width, firstViewport.height],
+        orientation: firstViewport.width > firstViewport.height ? "landscape" : "portrait",
+        compress: true
+      });
+
+      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+        const page = pageNumber === 1 ? firstPage : await pdf.getPage(pageNumber);
+        const effectiveScale = limitPdfScale(page, scale);
+        const viewport = page.getViewport({ scale: effectiveScale });
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d", { alpha: false });
+
+        canvas.width = Math.max(1, Math.round(viewport.width));
+        canvas.height = Math.max(1, Math.round(viewport.height));
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        await page.render({
+          canvasContext: context,
+          viewport
+        }).promise;
+
+        const imageData = canvas.toDataURL("image/jpeg", quality);
+
+        if (pageNumber > 1) {
+          documentPdf.addPage(
+            [viewport.width, viewport.height],
+            viewport.width > viewport.height ? "landscape" : "portrait"
+          );
+        }
+
+        documentPdf.setPage(pageNumber);
+        documentPdf.addImage(imageData, "JPEG", 0, 0, viewport.width, viewport.height, undefined, "FAST");
+      }
+
+      const blob = documentPdf.output("blob");
+      return { blob, scale, quality };
+    }
+
+    function limitPdfScale(page, desiredScale) {
+      const base = page.getViewport({ scale: 1 });
+      const maxSide = Math.max(base.width, base.height);
+      const limit = 1800 / maxSide;
+      return Math.min(desiredScale, Math.max(limit, 0.45));
+    }
+
+    function createResultCard(fileName, statusText) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="card-top">
+          <div>
+            <strong>${escapeHtml(fileName)}</strong>
+            <div class="status">${escapeHtml(statusText)}</div>
+          </div>
+          <span class="pill warn">In progress</span>
+        </div>
+      `;
+      return card;
+    }
+
+    function buildResultCard(originalFile, result, targetBytes) {
+      const card = document.createElement("div");
+      card.className = "card";
+      const reducedPercent = Math.max(0, Math.round((1 - (result.blob.size / originalFile.size)) * 100));
+      const difference = result.blob.size - targetBytes;
+      const approxText = result.keptOriginal
+        ? "Already within target"
+        : Math.abs(difference) <= targetBytes * 0.08
+          ? "Very close to target"
+          : difference < 0
+            ? "Below target"
+            : "Above target";
+      const statusClass = result.targetHit ? "ok" : "warn";
+
+      card.innerHTML = `
+        <div class="card-top">
+          <div>
+            <strong>${escapeHtml(originalFile.name)}</strong>
+            <div class="status">${escapeHtml(result.note || "Compression complete.")}</div>
+          </div>
+          <span class="pill ${statusClass}">${approxText}</span>
+        </div>
+        <div class="metric-row">
+          <div class="metric">
+            <small>Original</small>
+            <strong>${formatBytes(originalFile.size)}</strong>
+          </div>
+          <div class="metric">
+            <small>Compressed</small>
+            <strong>${formatBytes(result.blob.size)}</strong>
+          </div>
+          <div class="metric">
+            <small>Reduction</small>
+            <strong>${reducedPercent}%</strong>
+          </div>
+          <div class="metric">
+            <small>Target</small>
+            <strong>${formatBytes(targetBytes)}</strong>
+          </div>
+        </div>
+      `;
+
+      const downloadButton = document.createElement("button");
+      downloadButton.type = "button";
+      downloadButton.className = "download-button";
+      downloadButton.textContent = result.keptOriginal
+        ? "Download original quality file"
+        : result.blob.size < originalFile.size
+          ? "Download smaller file"
+          : "Download result";
+
+      downloadButton.addEventListener("click", () => {
+        downloadBlob(result.blob, result.fileName);
+      });
+
+      card.appendChild(downloadButton);
+      return card;
+    }
+
+    function buildErrorCard(file, error) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="card-top">
+          <div>
+            <strong>${escapeHtml(file.name)}</strong>
+            <div class="status">${escapeHtml(error.message || "Compression failed.")}</div>
+          </div>
+          <span class="pill warn">Skipped</span>
+        </div>
+      `;
+      return card;
+    }
+
+    function buildOriginalResult(file, note) {
+      return {
+        blob: file,
+        fileName: file.name,
+        outputType: file.type || "application/octet-stream",
+        note,
+        targetHit: true,
+        keptOriginal: true
+      };
+    }
+
+    function pickBetterCandidate(current, candidate, targetBytes) {
+      if (!candidate) {
+        return current;
+      }
+
+      if (!current) {
+        return candidate;
+      }
+
+      const currentWithinTarget = isWithinTarget(current, targetBytes);
+      const candidateWithinTarget = isWithinTarget(candidate, targetBytes);
+
+      if (candidateWithinTarget && !currentWithinTarget) {
+        return candidate;
+      }
+
+      if (!candidateWithinTarget && currentWithinTarget) {
+        return current;
+      }
+
+      const currentScore = scoreCandidate(current, targetBytes);
+      const candidateScore = scoreCandidate(candidate, targetBytes);
+      return candidateScore > currentScore ? candidate : current;
+    }
+
+    function scoreCandidate(candidate, targetBytes) {
+      const quality = typeof candidate.quality === "number" ? candidate.quality : 1;
+      const scale = typeof candidate.scale === "number" ? candidate.scale : 1;
+      const visualScore = (scale * scale * 0.68) + (quality * 0.32);
+
+      if (isWithinTarget(candidate, targetBytes)) {
+        const targetUse = clamp(candidate.blob.size / targetBytes, 0, 1);
+        return (visualScore * 1000) + targetUse;
+      }
+
+      const oversizeRatio = candidate.blob.size / targetBytes;
+      return visualScore - (oversizeRatio * 1000);
+    }
+
+    function isWithinTarget(candidate, targetBytes) {
+      return candidate.blob.size <= targetBytes;
+    }
+
+    function chooseImageMime(file, requestedMime) {
+      if (requestedMime !== "auto") {
+        return requestedMime;
+      }
+
+      if (file.type === "image/png" || file.type === "image/webp") {
+        return "image/webp";
+      }
+
+      return "image/jpeg";
+    }
+
+    function isImage(file) {
+      return file.type.startsWith("image/");
+    }
+
+    function isPdf(file) {
+      return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    }
+
+    function getTargetBytes() {
+      const size = Number(targetSizeInput.value);
+      const unit = targetUnitSelect.value;
+      return unit === "MB" ? size * 1024 * 1024 : size * 1024;
+    }
+
+    function buildOutputName(originalName, extension, keepBase) {
+      const baseName = keepBase
+        ? originalName.replace(/\.[^.]+$/, "")
+        : "compressed-file";
+      return baseName + "-compressed." + extension;
+    }
+
+    function extensionFromMime(mime) {
+      const lookup = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp"
+      };
+      return lookup[mime] || "bin";
+    }
+
+    function downloadBlob(blob, fileName) {
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) {
+        return bytes + " B";
+      }
+
+      if (bytes < 1024 * 1024) {
+        return (bytes / 1024).toFixed(bytes < 1024 * 100 ? 1 : 0) + " KB";
+      }
+
+      return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+    }
+
+    function describeType(file) {
+      if (isImage(file)) {
+        return "Image";
+      }
+
+      if (isPdf(file)) {
+        return "PDF";
+      }
+
+      return "Other document";
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function escapeHtml(text) {
+      return String(text).replace(/[&<>"']/g, (character) => {
+        const entities = {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;"
+        };
+        return entities[character];
+      });
+    }
+
+    function loadImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("Could not read image."));
+        reader.onload = () => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error("Could not open image."));
+          image.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function canvasToBlob(canvas, mime, quality) {
+      return new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error("Your browser could not create the compressed file."));
+            return;
+          }
+
+          resolve(blob);
+        }, mime, quality);
+      });
+    }
+  </script>
+</body>
+</html>
